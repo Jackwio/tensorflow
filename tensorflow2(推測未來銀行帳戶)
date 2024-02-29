@@ -1,0 +1,86 @@
+import tensorflow as tf
+from tensorflow import keras
+#loading data
+import pandas as pd
+#scaling feature values
+from sklearn.preprocessing import StandardScaler
+#encoding target values
+from sklearn.preprocessing import LabelEncoder
+#shuffling data
+from sklearn.utils import shuffle
+#splitting the dataset into training and validation
+from sklearn.model_selection import train_test_split
+#plotting curves
+import matplotlib.pyplot as plt
+#tensorboard visualization
+import datetime, os
+
+# 透過pandas讀取excel檔案(csv)
+data = pd.read_csv('../excel/Churn_Modelling.csv')
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+# For better machine learning, you should randomize the data
+data = shuffle(data)
+# Data Preprocessing
+# 1. Checking Nulls
+data.isnull().sum()
+# print(data)
+# 2.Selecting Features and Labels
+x = data.drop(labels=['RowNumber','CustomerId','Surname','Exited'],axis=1)
+# Whether the customer exited the bank marks the output of our model.
+y = data['Exited']
+# 3.Encoding Categorical Columns
+# 為了查看哪些類型要進行數值化
+# print(x.dtypes)
+# The encoding is done by using the LabelEncoder in sklearn’s preprocessing module.
+label = LabelEncoder()
+x['Geography'] = label.fit_transform(x['Geography'])
+x['Gender'] = label.fit_transform(x['Gender'])
+# drop_first=true設定是否刪掉第一個水平，例如:有3個分類就會多出2個bool值的欄位，但是我們透過3-1個就可以判斷出來
+x = pd.get_dummies(x, drop_first=True, columns=['Geography'])
+# print(x)
+# Scaling Numerical Values
+# machine learning would work better if we standardized all these data points to the same scale
+# Ideally, the mean for each column should be 0, 
+# and the standard deviation should be 1 for better results on machine learning.
+# 把以上標準差和平均數帶入 z = (x - mu) / s 進行標準化
+
+# 透過StandardScaler function of sklearn來進行標準化
+scaler = StandardScaler()
+x = scaler.fit_transform(x)
+
+# Creating Training and Testing Datasets
+# split our entire preprocessed data – a larger portion used for 
+# training and the smaller portion for testing the trained model.
+
+# The test_size parameter determines what percentage of data should be reserved for testing.
+x_train,x_test,y_train,y_test = train_test_split(x,y,test_size=3)
+# row*col，x_train.shape可以拿到(row*col)，透過[1]單純拿到col
+x_train.shape[1]
+model = keras.models.Sequential()
+# input_dim is the number of features
+# ReLU is the most widely used activation function that 
+# outputs 0 for negative inputs and 1 otherwise.
+model.add(keras.layers.Dense(128, activation = 'relu',input_dim = x_train.shape[1]))
+model.add(keras.layers.Dense(64, activation = 'relu'))
+model.add(keras.layers.Dense(32, activation = 'relu'))
+# We use sigmoid as the activation function here as this layer is outputting a binary value.
+model.add(keras.layers.Dense(1, activation = 'sigmoid'))
+# print the network summary 
+model.summary()
+# Compiling Model
+# As the model that we are developing is a binary classifier, we use the 
+# binary_crossentropy as our loss function.
+# The accuracy metrics are collected for 
+# analysis by specifying the value for metrics parameter.
+model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
+logdir = os.path.join("log",datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+tensorboard_callback = tf.keras.callbacks.TensorBoard(logdir,histogram_freq = 1)
+# Model Training
+# The first parameter to the fit function defines the features vector and the second defines the labels
+# The epochs parameter determines how many iterations would be performed during training. 
+# the callbacks parameter specifies which callback function would be called at the end of each iteration
+r = model.fit(x_train,y_train,batch_size=32,epochs=50,
+              validation_data=(x_test,y_test),callbacks=[tensorboard_callback])
+print(r)
