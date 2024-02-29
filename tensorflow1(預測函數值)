@@ -1,0 +1,52 @@
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras.callbacks import History
+history = History()
+
+# We set up the relation between x and y using a linear equation:
+# z = 7 * x + 6 * y + 5
+# In machine learning terms, the x and y are the features and z is the label.
+number_of_datapoints = 100
+# generate random x values in the range -5 to +5
+# size=(number_of_datapoints,1)，指定產生的dimension
+x = np.random.uniform(low=-5,high=5,size=(number_of_datapoints,1))
+# print(x[:5,:].round(2))
+y = np.random.uniform(low=-5,high=5,size=(number_of_datapoints,1))
+# print(y[:5,:].round(2))
+noise = np.random.uniform(low=-1,high=1,size=(number_of_datapoints,1))
+z = 7 * x + 6 * y + 5
+# 把兩個1D array組合起來變為2D array
+input = np.column_stack((x,y));
+# print(input)
+# units output space
+# input_shape 幾個特徵
+model = tf.keras.Sequential([keras.layers.Dense(units=1,  input_shape=(2,))])
+model.compile(optimizer = 'sgd' , loss = 'mean_squared_error' , metrics = ['mse'])
+# The epochs parameter defines the number of iterations.
+# The verbose parameter specifies if you want to observe the training progress.
+# The validation_split parameter specifies that 20% of the given data would be used
+# for validating the trained model.
+# the callbacks parameter specifies where the intermediate monitoring data would be stored.
+model.fit(input,z,epochs = 15,verbose = 1, validation_split = 0.2 , callbacks = [history])
+
+# 圖形化
+# 绘制圖
+# plt.plot(history.history['loss'])
+# plt.plot(history.history['val_loss'])
+# plt.title('accuracy')
+# plt.xlabel('exoch')
+# plt.ylabel('loss')
+# legend 函数为图例添加说明
+# plt.legend(['train','validation'],loc = 'upper right')
+# plt.show()
+
+# 查看和真實值的差異
+# plt.plot(np.squeeze(model.predict_on_batch(input)), 
+# np.squeeze(z))
+# plt.xlabel('predicted output')    
+# plt.ylabel('real output') 
+# plt.show()
+
+print(model.predict(np.array([[2,3]])).round(2))
